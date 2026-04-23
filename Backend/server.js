@@ -3,6 +3,7 @@ const cors = require('cors');
 const morgan = require('morgan');
 const dotenv = require('dotenv');
 const logger = require('./utils/logger');
+const path = require('path');
 const whisperRoutes = require('./routes/whisper');
 const suggestionRoutes = require('./routes/suggestions');
 
@@ -22,6 +23,9 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(morgan('dev'));
+
+// Static files (Landing Page)
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Routes
 app.use('/api/whisper', whisperRoutes);
