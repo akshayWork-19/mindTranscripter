@@ -48,6 +48,7 @@ function App() {
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [sessionTime, setSessionTime] = useState(0);
+  const [transcriptError, setTranscriptError] = useState(null);
   const [settings, setSettings] = useState(() => {
     const saved = localStorage.getItem('twinmind_settings');
     return saved ? JSON.parse(saved) : DEFAULT_SETTINGS;
@@ -57,6 +58,7 @@ function App() {
 
   // Generate Suggestions
   const generateSuggestions = useCallback(async (customTranscript = null) => {
+    if (isRefreshing) return;
     const transcriptToUse = customTranscript || transcript;
     if (transcriptToUse.length === 0) return;
 
@@ -68,7 +70,7 @@ function App() {
         settings.suggestionModel
       );
 
-      if (response.suggestions) {
+      if (response.suggestions?.length > 0) {
         setSuggestionBatches(prev => [{
           id: Date.now(),
           timestamp: new Date().toLocaleTimeString(),
@@ -80,17 +82,25 @@ function App() {
     } finally {
       setIsRefreshing(false);
     }
-  }, [transcript, settings]);
+  }, [transcript, settings, isRefreshing]);
 
   // Handle periodic audio chunks (every 30s)
   const handleChunkReady = useCallback(async (blob) => {
     try {
+      if (isTranscribing) {
+        console.warn('Previous chunk still processing, skipping!');
+        return;
+      }
+      if (!blob || blob.size < 1000) {
+        console.warn('chunk too small, skipping');
+        return;
+      }
       console.log(`🎤 Processing 30s chunk: ${blob.size} bytes`);
       setIsTranscribing(true);
       const { transcript: newText, error } = await api.transcribe(blob);
 
       if (error) {
-        console.error('Transcription error:', error);
+        setTranscriptError(error || 'failed to transcribe this segment. Recording continues');
         return;
       }
 
@@ -98,17 +108,16 @@ function App() {
         console.log('📝 Transcribed:', newText);
         const updatedTranscript = [...transcript, newText];
         setTranscript(updatedTranscript);
-
         // IMMEDIATE suggestion refresh on new data
         console.log('🚀 Triggering immediate suggestion refresh for new context...');
         generateSuggestions(updatedTranscript);
       }
     } catch (err) {
-      console.error('Transcription error:', err);
+      setTranscriptError(err);
     } finally {
       setIsTranscribing(false);
     }
-  }, [transcript, generateSuggestions]);
+  }, [transcript, generateSuggestions, isTranscribing]);
 
   const { isRecording, startRecording, stopRecording } = useAudioRecorder(handleChunkReady);
 
@@ -197,6 +206,9 @@ function App() {
         settings.chatModel,
         (token) => {
           fullContent += token;
+          setChatMessages(prev => prev.map(msg =>
+            msg.id === assistantMsgId ? { ...msg, content: fullContent } : msg
+          ));
         }
       );
 
@@ -208,10 +220,11 @@ function App() {
     } catch (err) {
       console.error('Chat error:', err);
       const errorMsg = err.response?.data?.error || err.message;
-      alert(`Chat failed: ${errorMsg}. Make sure your Groq API Key is set in Settings.`);
-
-      // Remove the empty assistant message if it failed
-      setChatMessages(prev => prev.filter(msg => msg.id !== assistantMsgId));
+      setChatMessages(prev => prev.map(msg =>
+        msg.id === assistantMsgId
+          ? { ...msg, content: `Error: ${errorMsg}`, isGenerating: false, isError: true }
+          : msg
+      ));
     }
   }, [transcript, settings]);
 

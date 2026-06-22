@@ -11,6 +11,7 @@ TwinMind is a professional-grade dashboard designed for real-time meeting assist
 - **Interactive Chat**: A deep-context assistant that uses the meeting transcript to answer complex questions.
 - **Session-Only Persistence**: Privacy-focused architecture with no database requirements; everything stays in your current session.
 - **Premium UI/UX**: Compact, high-density dashboard built with React, Tailwind CSS, and Shadcn UI.
+- **Robust Architecture**: Clean Service & Controller pattern, Zod-based request validation, custom error classes, and centralized environment configuration.
 
 ## 🛠️ Tech Stack
 
@@ -24,9 +25,11 @@ TwinMind is a professional-grade dashboard designed for real-time meeting assist
 
 ```text
 ├── Backend/              # Node.js Express server
+│   ├── config/           # Environment and app configuration
+│   ├── Controllers/      # Route handlers separating logic from routing
+│   ├── middleware/       # Express middlewares (Zod validation, etc.)
 │   ├── routes/           # API endpoints for Whisper & Llama-3
-│   ├── utils/            # Winston logger & helper functions
-│   └── .env.example      # Backend environment template
+│   ├── utils/            # Custom Error classes, Winston logger & helpers
 ├── frontend/             # React application
 │   ├── src/              # Source code (Components, Hooks, Services)
 │   ├── public/           # Static assets

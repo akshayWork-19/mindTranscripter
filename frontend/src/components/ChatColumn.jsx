@@ -1,23 +1,44 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, User, MessageSquare } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { motion } from 'framer-motion';
 import { Separator } from "@/components/ui/separator";
+import { useForm } from 'react-hook-form';
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+
+
+const chatSchema = z.object({
+  inpurt: z.string().min(1, 'Message cannot be empty').max(1000, 'Message is too long')
+})
+
+
+
 
 const ChatColumn = ({ messages, onSubmit }) => {
   const [input, setInput] = useState('');
   const scrollRef = useRef(null);
 
+  const { register, handleSubmit, reset, formState: { errors } } = useForm({
+    resolver: zodResolver(chatSchema),
+    defaultValues: { input: '' }
+  })
+
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!input.trim()) return;
-    onSubmit(input);
-    setInput('');
-  };
+
+  const handleFormSubmit = (data) => {
+    onSubmit(data.input);
+    reset();
+  }
+
+  // const handleSubmit = (e) => {
+  //   e.preventDefault();
+  //   if (!input.trim()) return;
+  //   onSubmit(input);
+  //   setInput('');
+  // };
 
   return (
     <div className="column h-full">
@@ -85,21 +106,22 @@ const ChatColumn = ({ messages, onSubmit }) => {
 
       <Separator className="bg-white/5 mt-4" />
 
-      <form onSubmit={handleSubmit} className="chat-input-container">
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask anything..."
-            className="chat-input"
-          />
-          <button
-            type="submit"
-            className="primary"
-          >
-            Send
-          </button>
+      <form onSubmit={handleSubmit(handleFormSubmit)} className="chat-input-container">
+        <div className="flex flex-col gap-2 w-full">
+          <div className="flex gap-2">
+            <input
+              {...register('input')}
+              type="text"
+              placeholder="Ask anything..."
+              className={`chat-input w-full ${errors.input ? 'border-red-500/50 outline-red-500/50' : ''}`}
+            />
+            <button type="submit" className="primary">
+              Send
+            </button>
+          </div>
+          {errors.input && (
+            <span className="text-red-500 text-xs px-2 font-medium">{errors.input.message}</span>
+          )}
         </div>
       </form>
     </div>

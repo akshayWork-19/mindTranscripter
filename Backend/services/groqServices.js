@@ -24,7 +24,11 @@ class GroqService {
       return transcription.text;
     } catch (error) {
       logger.error('Groq Transcription Error', { message: error.message, stack: error.stack });
-      throw error;
+      if (error.status === 429) throw { status: 429, message: "Rate limit reached. Try again shortly !" };
+      if (error.status === 401) throw { status: 401, message: 'Invalid API key.' };
+      if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') throw { status: 408, message: 'Transcription timed out.' };
+
+      throw { status: 500, message: 'Transcription failed.' };
     }
   }
 
@@ -41,7 +45,7 @@ class GroqService {
           },
           {
             role: 'user',
-            content: `Recent Transcript: ${transcript}`
+            content: `Recent Transcript:\n${transcript.join('\n')}`
           }
         ],
         model: model,
@@ -49,10 +53,16 @@ class GroqService {
       });
 
       const content = JSON.parse(completion.choices[0].message.content);
-      return content.suggestions || content;
+      if (!content.suggestions || content.suggestions.length === 0) {
+        throw { status: 500, message: 'Model returned unexpected format.' };
+      }
+
+      return content.suggestions;
     } catch (error) {
-      logger.error('Groq Suggestions Error', { message: error.message, stack: error.stack });
-      throw error;
+      logger.error('Groq Suggestions Error', { message: error.message });
+      if (error.status === 429) throw { status: 429, message: 'Rate limit reached.' };
+      if (error.status === 401) throw { status: 401, message: 'Invalid API key.' };
+      throw { status: 500, message: 'Failed to generate suggestions.' };
     }
   }
 
@@ -76,8 +86,10 @@ class GroqService {
         stream: true,
       });
     } catch (error) {
-      logger.error('Groq Streaming Error', { message: error.message, stack: error.stack });
-      throw error;
+      logger.error('Groq Streaming Error', { message: error.message });
+      if (error.status === 429) throw { status: 429, message: 'Rate limit reached.' };
+      if (error.status === 401) throw { status: 401, message: 'Invalid API key.' };
+      throw { status: 500, message: 'Failed to start stream.' };
     }
   }
 }
