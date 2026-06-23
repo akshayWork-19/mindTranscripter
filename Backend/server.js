@@ -7,6 +7,8 @@ const path = require('path');
 const whisperRoutes = require('./routes/whisper');
 const suggestionRoutes = require('./routes/suggestions');
 const config = require('./config/env');
+const { apiLimiter } = require('./middleware/rateLimiter');
+
 
 dotenv.config();
 const PORT = config.PORT;
@@ -21,7 +23,7 @@ app.use(cors({
   origin: function (origin, callback) {
     // Allow requests with no origin (e.g., Postman, server-to-server)
     if (!origin) return callback(null, true);
-    
+
     // Check if origin is allowed or if wildcard '*' is used
     if (allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
       return callback(null, true);
@@ -39,6 +41,7 @@ app.use(morgan('dev'));
 // Static files (Landing Page)
 app.use(express.static(path.join(__dirname, 'public')));
 
+app.use('/api', apiLimiter);
 // Routes
 app.use('/api/whisper', whisperRoutes);
 app.use('/api/suggestions', suggestionRoutes);

@@ -8,7 +8,7 @@ import * as z from "zod";
 
 
 const chatSchema = z.object({
-  inpurt: z.string().min(1, 'Message cannot be empty').max(1000, 'Message is too long')
+  input: z.string().min(1, 'Message cannot be empty').max(1000, 'Message is too long')
 })
 
 

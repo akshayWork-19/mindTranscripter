@@ -23,10 +23,10 @@ export const api = {
       });
       return response.data;
     } catch (error) {
-      if (!err.response) return { error: 'Connection failed. Check your network.' };
-      if (err.response.status === 401) return { error: 'Invalid API key.' };
-      if (err.response.status === 429) return { error: 'Rate limit hit. Try again shortly.' };
-      if (err.code === 'ECONNABORTED') return { error: 'Transcription timed out.' };
+      if (!error.response) return { error: 'Connection failed. Check your network.' };
+      if (error.response.status === 401) return { error: 'Invalid API key.' };
+      if (error.response.status === 429) return { error: 'Rate limit hit. Try again shortly.' };
+      if (error.code === 'ECONNABORTED') return { error: 'Transcription timed out.' };
       return { error: 'Transcription failed.' };
     }
   },

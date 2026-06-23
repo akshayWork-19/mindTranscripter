@@ -2,6 +2,9 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Settings, Zap } from 'lucide-react';
 import { useAudioRecorder } from './hooks/useAudioRecorder';
 import { api } from './services/api';
+import { ErrorBoundary } from 'react-error-boundary';
+import ErrorFallback from './components/ErrorFallback';
+import { Toaster, toast } from 'react-hot-toast';
 
 // Components
 import TranscriptColumn from './components/TranscriptColumn';
@@ -247,6 +250,19 @@ function App() {
   return (
     <div className="flex flex-col h-screen bg-[#0c0d12] text-white">
       {/* Sleek Navbar */}
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          // Styled to match your sleek dark theme!
+          style: {
+            background: '#161821',
+            color: '#fff',
+            border: '1px solid rgba(255,255,255,0.1)',
+            fontSize: '14px',
+          },
+          success: { iconTheme: { primary: '#3b82f6', secondary: '#fff' } }
+        }}
+      />
       <nav className="flex items-center justify-between px-8 py-4 border-b border-white/5 bg-[#111218]/50 backdrop-blur-md z-50">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/20">
@@ -314,10 +330,12 @@ function App() {
 
         <Card className="bg-[#111218] border-white/5 overflow-hidden flex flex-col shadow-2xl">
           <CardContent className="p-0 flex-1 flex flex-col overflow-hidden">
-            <ChatColumn
-              messages={chatMessages}
-              onSubmit={handleChatSubmit}
-            />
+            <ErrorBoundary FallbackComponent={ErrorFallback} onReset={() => { }}>
+              <ChatColumn
+                messages={chatMessages}
+                onSubmit={handleChatSubmit}
+              />
+            </ErrorBoundary>
           </CardContent>
         </Card>
       </main>
